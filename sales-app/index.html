@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Control de Ventas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div>
+          <p class="eyebrow">Panel</p>
+          <h1>Control de Ventas</h1>
+          <p class="subtitle">Registra tus ventas diarias, controla márgenes y revisa el rendimiento por canal.</p>
+        </div>
+        <div class="summary" aria-live="polite">
+          <div>
+            <span>Total ventas</span>
+            <strong id="total-sales">$0.00</strong>
+          </div>
+          <div>
+            <span>Unidades</span>
+            <strong id="total-units">0</strong>
+          </div>
+          <div>
+            <span>Ticket promedio</span>
+            <strong id="avg-ticket">$0.00</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <form id="sale-form" class="card" aria-label="Registrar venta">
+          <h2>Nueva venta</h2>
+          <div class="field">
+            <label for="sale-date">Fecha</label>
+            <input id="sale-date" name="date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="sale-product">Producto o servicio</label>
+            <input id="sale-product" name="product" type="text" placeholder="Ej. Plan mensual" required />
+          </div>
+          <div class="field">
+            <label for="sale-channel">Canal</label>
+            <select id="sale-channel" name="channel" required>
+              <option value="Tienda física">Tienda física</option>
+              <option value="Web">Web</option>
+              <option value="Marketplace">Marketplace</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="inline">
+            <div class="field">
+              <label for="sale-qty">Unidades</label>
+              <input id="sale-qty" name="quantity" type="number" min="1" value="1" required />
+            </div>
+            <div class="field">
+              <label for="sale-price">Precio unitario</label>
+              <input id="sale-price" name="price" type="number" min="0" step="0.01" value="0" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="sale-cost">Costo estimado</label>
+            <input id="sale-cost" name="cost" type="number" min="0" step="0.01" value="0" />
+          </div>
+          <button type="submit">Guardar venta</button>
+        </form>
+
+        <div class="card list" aria-label="Listado de ventas">
+          <div class="list-header">
+            <h2>Ventas registradas</h2>
+            <button id="clear-sales" class="ghost" type="button">Limpiar todo</button>
+          </div>
+          <div class="filters">
+            <label>
+              Canal
+              <select id="filter-channel">
+                <option value="">Todos</option>
+                <option value="Tienda física">Tienda física</option>
+                <option value="Web">Web</option>
+                <option value="Marketplace">Marketplace</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </label>
+            <label>
+              Buscar
+              <input id="filter-text" type="search" placeholder="Producto o canal" />
+            </label>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Producto</th>
+                  <th>Canal</th>
+                  <th>Unidades</th>
+                  <th>Precio</th>
+                  <th>Margen</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="sales-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
