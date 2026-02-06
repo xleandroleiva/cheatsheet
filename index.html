@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control mensual de gastos y cobros</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Control mensual</p>
+        <h1>Gastos y cobros</h1>
+        <p class="subtitle">
+          Cargá los datos de tu planilla para llevar un seguimiento de gastos fijos,
+          cheques y pagos a tarjetas.
+        </p>
+      </div>
+      <div class="summary">
+        <div>
+          <p>Total pesos</p>
+          <strong id="total-pesos">$ 0</strong>
+        </div>
+        <div>
+          <p>Total U$S</p>
+          <strong id="total-usd">U$S 0</strong>
+        </div>
+        <div>
+          <p>Pagado</p>
+          <strong id="total-pagado">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel panel--compact">
+        <h2>Configuración</h2>
+        <div class="grid grid--compact">
+          <label>
+            Año
+            <input type="number" name="anio" id="anio" min="2000" max="2100" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Nuevo movimiento</h2>
+        <form id="entry-form">
+          <div class="grid">
+            <label>
+              Concepto
+              <input name="concepto" required placeholder="Ej: Cablevisión" />
+            </label>
+            <label>
+              Tipo
+              <select name="tipo" required>
+                <option value="gasto fijo">Gasto fijo</option>
+                <option value="cheque">Cheque</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+            </label>
+            <label>
+              Día
+              <input
+                name="dia"
+                class="readonly"
+                maxlength="15"
+                readonly
+                tabindex="-1"
+              />
+            </label>
+            <label>
+              Día del mes
+              <input type="number" name="diaMes" min="1" max="31" step="1" />
+            </label>
+            <label>
+              Mes
+              <select name="mes">
+                <option value="">Seleccionar</option>
+                <option value="0">Enero</option>
+                <option value="1">Febrero</option>
+                <option value="2">Marzo</option>
+                <option value="3">Abril</option>
+                <option value="4">Mayo</option>
+                <option value="5">Junio</option>
+                <option value="6">Julio</option>
+                <option value="7">Agosto</option>
+                <option value="8">Septiembre</option>
+                <option value="9">Octubre</option>
+                <option value="10">Noviembre</option>
+                <option value="11">Diciembre</option>
+              </select>
+            </label>
+            <label>
+              Pesos
+              <input type="number" name="pesos" step="1" min="0" placeholder="0" />
+            </label>
+            <label>
+              U$S
+              <input type="number" name="usd" step="1" min="0" placeholder="0" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="pagado" />
+              Pagado
+            </label>
+            <label>
+              Banco
+              <select name="banco" id="banco-select">
+                <option value="">Seleccionar</option>
+              </select>
+            </label>
+            <label>
+              Entrega
+              <input type="number" name="entrega" step="1" min="0" placeholder="0" />
+            </label>
+            <label>
+              Saldo
+              <input
+                type="number"
+                name="saldo"
+                step="1"
+                min="0"
+                placeholder="0"
+                readonly
+                class="readonly"
+                tabindex="-1"
+              />
+            </label>
+            <label>
+              Pago mínimo
+              <input type="number" name="pagoMinimo" step="1" min="0" placeholder="0" />
+            </label>
+            <label class="full">
+              Notas
+              <textarea name="notas" rows="2" placeholder="Observaciones"></textarea>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit">Guardar movimiento</button>
+            <button type="button" class="ghost" id="clear-form">Limpiar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Movimientos del mes</h2>
+          <div class="filters">
+            <label>
+              Buscar
+              <input id="search" placeholder="Buscar por concepto o banco" />
+            </label>
+            <label>
+              Filtrar tipo
+              <select id="filter-type">
+                <option value="">Todos</option>
+                <option value="gasto fijo">Gasto fijo</option>
+                <option value="cheque">Cheque</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Tipo</th>
+                <th>Día</th>
+                <th>Fecha</th>
+                <th>Pesos</th>
+                <th>U$S</th>
+                <th>Pagado</th>
+                <th>Entrega</th>
+                <th>Saldo</th>
+                <th>Banco</th>
+                <th>Pago mínimo</th>
+                <th>Notas</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="entries"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="empty-state">Todavía no cargaste movimientos.</p>
+      </section>
+
+      <section class="panel panel--compact">
+        <h2>Bancos</h2>
+        <form id="bank-form" class="bank-form">
+          <label>
+            Agregar banco
+            <input name="bankName" placeholder="Ej: Macro" />
+          </label>
+          <button type="submit">Cargar banco</button>
+        </form>
+        <div class="bank-list" id="bank-list"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
