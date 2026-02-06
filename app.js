@@ -8,14 +8,20 @@ const clearForm = document.querySelector("#clear-form");
 const searchInput = document.querySelector("#search");
 const filterType = document.querySelector("#filter-type");
 const diaInput = form.querySelector("[name='dia']");
-const fechaInput = form.querySelector("[name='fecha']");
+const diaMesInput = form.querySelector("[name='diaMes']");
+const mesInput = form.querySelector("[name='mes']");
 const pesosInput = form.querySelector("[name='pesos']");
 const entregaInput = form.querySelector("[name='entrega']");
 const saldoInput = form.querySelector("[name='saldo']");
 const pagadoInput = form.querySelector("[name='pagado']");
 const bancoInput = form.querySelector("[name='banco']");
+const anioInput = document.querySelector("#anio");
+const bankForm = document.querySelector("#bank-form");
+const bankList = document.querySelector("#bank-list");
 
 const STORAGE_KEY = "gastos-cobros-entries";
+const BANKS_KEY = "gastos-cobros-banks";
+const YEAR_KEY = "gastos-cobros-year";
 
 const currencyFormat = (value, currency) => {
   if (!value) {
@@ -25,7 +31,8 @@ const currencyFormat = (value, currency) => {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
   }).format(value);
 };
 
@@ -50,6 +57,7 @@ const saveStorage = (entries) => {
 
 let entries = readStorage();
 let editingId = null;
+let banks = [];
 
 const resetForm = () => {
   form.reset();
@@ -58,13 +66,37 @@ const resetForm = () => {
   updateBankAndEntregaState();
 };
 
+const getYearValue = () => {
+  const raw = Number(anioInput.value);
+  if (!raw) {
+    return new Date().getFullYear();
+  }
+  return raw;
+};
+
+const buildFecha = () => {
+  const diaMes = Number(diaMesInput.value);
+  const mes = Number(mesInput.value);
+  const anio = getYearValue();
+  if (!diaMesInput.value || mesInput.value === "") {
+    return "";
+  }
+  const fecha = new Date(anio, mes, diaMes);
+  if (Number.isNaN(fecha.getTime())) {
+    return "";
+  }
+  const day = String(diaMes).padStart(2, "0");
+  const month = String(mes + 1).padStart(2, "0");
+  return `${day}/${month}/${anio}`;
+};
+
 const updateDiaFromFecha = () => {
-  if (!fechaInput.value) {
+  if (!diaMesInput.value || mesInput.value === "") {
     diaInput.value = "";
     return;
   }
 
-  const date = new Date(`${fechaInput.value}T00:00:00`);
+  const date = new Date(getYearValue(), Number(mesInput.value), Number(diaMesInput.value));
   if (Number.isNaN(date.getTime())) {
     diaInput.value = "";
     return;
@@ -76,11 +108,10 @@ const updateDiaFromFecha = () => {
 };
 
 const updateSaldo = () => {
-  const pesos = Number(pesosInput.value) || 0;
-  const entrega = Number(entregaInput.value) || 0;
+  const pesos = Math.round(Number(pesosInput.value) || 0);
+  const entrega = Math.round(Number(entregaInput.value) || 0);
   const saldo = Math.max(pesos - entrega, 0);
-  saldoInput.value = saldo.toFixed(2);
-  pagadoInput.checked = saldo === 0 && pesos > 0;
+  saldoInput.value = saldo;
   updateBankAndEntregaState();
 };
 
@@ -93,17 +124,69 @@ const updateBankAndEntregaState = () => {
   if (!enable) {
     bancoInput.value = "";
     entregaInput.value = "";
-    saldoInput.value = (Number(pesosInput.value) || 0).toFixed(2);
+    saldoInput.value = Math.round(Number(pesosInput.value) || 0);
   }
 };
 
 const handlePagadoToggle = () => {
   if (pagadoInput.checked) {
-    entregaInput.value = Number(pesosInput.value || 0).toFixed(2);
+    entregaInput.value = Math.round(Number(pesosInput.value || 0));
   } else {
     entregaInput.value = "";
   }
   updateSaldo();
+};
+
+const loadBanks = () => {
+  const raw = localStorage.getItem(BANKS_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      banks = Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn("No se pudo leer bancos", error);
+      banks = [];
+    }
+  }
+
+  if (banks.length === 0) {
+    banks = ["Macro", "Nación", "Santander", "Galicia"];
+  }
+};
+
+const saveBanks = () => {
+  localStorage.setItem(BANKS_KEY, JSON.stringify(banks));
+};
+
+const renderBanks = () => {
+  bancoInput.innerHTML = "<option value=\"\">Seleccionar</option>";
+  banks.forEach((bank) => {
+    const option = document.createElement("option");
+    option.value = bank;
+    option.textContent = bank;
+    bancoInput.appendChild(option);
+  });
+
+  bankList.innerHTML = "";
+  banks.forEach((bank) => {
+    const chip = document.createElement("div");
+    chip.className = "bank-chip";
+    chip.innerHTML = `
+      <span>${bank}</span>
+      <button type="button" data-bank="${bank}" aria-label="Eliminar banco">✕</button>
+    `;
+    bankList.appendChild(chip);
+  });
+};
+
+const loadYear = () => {
+  const stored = localStorage.getItem(YEAR_KEY);
+  anioInput.value = stored || new Date().getFullYear();
+};
+
+const saveYear = () => {
+  localStorage.setItem(YEAR_KEY, anioInput.value);
+  updateDiaFromFecha();
 };
 
 const buildRow = (entry) => {
@@ -178,20 +261,21 @@ const render = () => {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(form);
-  const saldo = Number(saldoInput.value) || 0;
+  const saldo = Math.round(Number(saldoInput.value) || 0);
+  const fecha = buildFecha();
 
   const entry = {
     id: editingId ?? crypto.randomUUID(),
     concepto: data.get("concepto").trim(),
     tipo: data.get("tipo"),
     dia: data.get("dia").trim(),
-    fecha: data.get("fecha"),
-    pesos: Number(data.get("pesos")) || 0,
-    usd: Number(data.get("usd")) || 0,
+    fecha,
+    pesos: Math.round(Number(data.get("pesos")) || 0),
+    usd: Math.round(Number(data.get("usd")) || 0),
     banco: data.get("banco").trim(),
-    entrega: Number(data.get("entrega")) || 0,
+    entrega: Math.round(Number(data.get("entrega")) || 0),
     saldo,
-    pagoMinimo: Number(data.get("pagoMinimo")) || 0,
+    pagoMinimo: Math.round(Number(data.get("pagoMinimo")) || 0),
     notas: data.get("notas").trim(),
   };
 
@@ -234,15 +318,25 @@ entriesBody.addEventListener("click", (event) => {
     form.concepto.value = entry.concepto;
     form.tipo.value = entry.tipo;
     form.dia.value = entry.dia;
-    form.fecha.value = entry.fecha;
+    if (entry.fecha) {
+      const [day, month] = entry.fecha.split("/");
+      diaMesInput.value = Number(day);
+      mesInput.value = String(Number(month) - 1);
+    }
     form.pesos.value = entry.pesos;
     form.usd.value = entry.usd;
-    pagadoInput.checked = entry.saldo === 0 && entry.pesos > 0;
+    pagadoInput.checked = entry.entrega > 0;
+    if (entry.banco && !banks.includes(entry.banco)) {
+      banks.push(entry.banco);
+      saveBanks();
+      renderBanks();
+    }
     form.banco.value = entry.banco;
     form.entrega.value = entry.entrega;
-    form.saldo.value = entry.saldo.toFixed(2);
+    form.saldo.value = entry.saldo;
     form.pagoMinimo.value = entry.pagoMinimo;
     form.notas.value = entry.notas;
+    updateDiaFromFecha();
     updateBankAndEntregaState();
     return;
   }
@@ -251,11 +345,46 @@ entriesBody.addEventListener("click", (event) => {
 searchInput.addEventListener("input", render);
 filterType.addEventListener("change", render);
 clearForm.addEventListener("click", resetForm);
-fechaInput.addEventListener("change", updateDiaFromFecha);
+diaMesInput.addEventListener("input", updateDiaFromFecha);
+mesInput.addEventListener("change", updateDiaFromFecha);
 pesosInput.addEventListener("input", updateSaldo);
 entregaInput.addEventListener("input", updateSaldo);
 pagadoInput.addEventListener("change", handlePagadoToggle);
+anioInput.addEventListener("change", saveYear);
 
+bankForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(bankForm);
+  const bankName = data.get("bankName").trim();
+  if (!bankName) {
+    return;
+  }
+  if (!banks.includes(bankName)) {
+    banks.push(bankName);
+    banks.sort((a, b) => a.localeCompare(b, "es"));
+    saveBanks();
+    renderBanks();
+  }
+  bankForm.reset();
+});
+
+bankList.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+  const bankName = target.dataset.bank;
+  if (!bankName) {
+    return;
+  }
+  banks = banks.filter((bank) => bank !== bankName);
+  saveBanks();
+  renderBanks();
+});
+
+loadYear();
+loadBanks();
+renderBanks();
 render();
 updateSaldo();
 updateDiaFromFecha();
